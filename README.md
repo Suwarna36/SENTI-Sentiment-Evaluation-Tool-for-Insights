@@ -86,7 +86,9 @@ To set up this project on your local machine:
 
 
 
-![FindSentiment](https://github.com/user-attachments/assets/8b057829-095f-4ec3-8ee3-d7bf4341910e)
+![FindSentiment](https://github.com/user-attachments/assets/1a2b2c92-0928-4354-b485-3e32a7b7f540)
+
+
 
 
 ## Acknowledgments
