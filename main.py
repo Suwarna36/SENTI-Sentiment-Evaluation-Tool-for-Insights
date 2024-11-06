@@ -1,255 +1,136 @@
-# Importing the libraries
 import pickle
 import pandas as pd
 import webbrowser
-# !pip install dash
 import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 from matplotlib import pyplot as plt
-
-from dash.dependencies import Input, Output , State
+from dash.dependencies import Input, Output, State
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 import os
-import wordcloud
-from collections import Counter
-import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 
 # Declaring Global variables
-project_name = None
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+project_name = None
 
-# Defining My Functions
+# Function to load the model and data
 def load_model():
-    global scrappedReviews
+    global scrappedReviews, pickle_model, vocab, chart_dropdown_values
     scrappedReviews = pd.read_csv('scrappedReviews.csv')
-  
-    global pickle_model
-    file = open("pickle_model.pkl", 'rb') 
-    pickle_model = pickle.load(file)
-
-    global vocab
-    file = open("features.pkl", 'rb') 
-    vocab = pickle.load(file)
-    #pie chart
-    print('Loading Data......')
-    temp = []
-    for i in scrappedReviews['reviews']:
-        temp.append(check_review(i)[0])
-    scrappedReviews['sentiment'] = temp
     
-    positive = len(scrappedReviews[scrappedReviews['sentiment']==1])
-    negative = len(scrappedReviews[scrappedReviews['sentiment']==0])
-    
-    explode = (0.1,0)  
+    # Load the sentiment model and vocabulary
+    with open("pickle_model.pkl", 'rb') as file:
+        pickle_model = pickle.load(file)
+    with open("features.pkl", 'rb') as file:
+        vocab = pickle.load(file)
 
-    langs = ['Positive', 'Negative',]
-    students = [positive,negative]
-    colors = ['#41fc1c','red']
-    plt.pie(students,explode=explode,startangle=90,colors=colors, labels = langs,autopct='%1.2f%%')
-    cwd = os.getcwd()
-    if 'assets' not in os.listdir(cwd):
-        os.makedirs(cwd+'/assets')
-    plt.savefig('assets/sentiment.png')
-    #wordcloud
-    dataset = scrappedReviews['reviews'].to_list()
-    str1 = ''
-    for i in dataset:
-        str1 = str1+i
-    str1 = str1.lower()
+    # Prepare dropdown values
+    chart_dropdown_values = [
+        {"label": review[:80] + '...' if len(review) > 80 else review, "value": review}
+        for review in scrappedReviews['reviews']
+    ]
 
-    stopwords = set(STOPWORDS)
-    cloud = WordCloud(width = 800, height = 400,
-                background_color ='white',
-                stopwords = stopwords,
-                min_font_size = 10).generate(str1)
-    cloud.to_file("assets/wordCloud.png")
-    #drop down
-    global chart_dropdown_values
-    chart_dropdown_values = {}
-    for i in range(400,501):
-        chart_dropdown_values[scrappedReviews['reviews'][i]] = scrappedReviews['reviews'][i]
-    chart_dropdown_values = [{"label":key, "value":values} for key,values in chart_dropdown_values.items()]
-    
+# Function to check sentiment of a given review
 def check_review(reviewText):
-
-    #reviewText has to be vectorised, that vectorizer is not saved yet
-    #load the vectorize and call transform and then pass that to model preidctor
-    #load it later
-
     transformer = TfidfTransformer()
-    loaded_vec = CountVectorizer(decode_error="replace",vocabulary=vocab)
+    loaded_vec = CountVectorizer(decode_error="replace", vocabulary=vocab)
     vectorised_review = transformer.fit_transform(loaded_vec.fit_transform([reviewText]))
-
-
-    # Add code to test the sentiment of using both the model
-    # 0 == negative   1 == positive
-    
     return pickle_model.predict(vectorised_review)
 
+# Function to open the browser with the web app
 def open_browser():
     webbrowser.open_new('http://127.0.0.1:8050/')
-    
+
+# Function to create the app UI
 def create_app_ui():
-    main_layout = html.Div(
-    [
-    html.H1(id='Main_title', children = "Sentiment Analysis with Insights",style={'text-align':'center'}),
-    html.Hr(style={'background-color':'black'}),
-    html.H2(children = "Pie Chart",style = {'text-align':'center','text-decoration':'underline'}),
-    html.P([html.Img(src=app.get_asset_url('sentiment.png'),style={'width':'700px','height':'400px'})],style={'text-align':'center'}),
-    html.Hr(style={'background-color':'black'}),
-    html.H2(children = "WordCloud",style = {'text-align':'center','text-decoration':'underline'}),
-    html.P([html.Img(src=app.get_asset_url('wordCloud.png'),style={'width':'700px','height':'400px'})],style={'text-align':'center'}),
-    html.Hr(style={'background-color':'black'}),
-    html.H2(children = "Select a Review",style = {'text-align':'center','text-decoration':'underline'}),
-    dcc.Dropdown(
-                id='Chart_Dropdown', 
-                  options=chart_dropdown_values,
-                  placeholder = 'Select a Review',style={'font-size':'22px','height':'70px'}
-                    ),
-    html.H1(children = 'Missing',id='sentiment1',style={'text-align':'center'}),
-    html.Hr(style={'background-color':'black'}),
-    html.H2(children = "Find Sentiment of Your Review",style = {'text-align':'center','text-decoration':'underline'}),
-    dcc.Textarea(
-        id = 'textarea_review',
-        placeholder = 'Enter the review here.....',
-        style = {'width':'100%', 'height':150,'font-size':'22px'}
-        ),
-    
-    dbc.Button(
-        children = 'FInd Review',
-        id = 'button_review',
-        color = 'dark',
-        style= {'width':'100%'}
-        ),
-    
-    html.H1(children = 'Missing', id='result',style={'text-align':'center'})
-    
-    ]    
+    return html.Div(
+        style={
+            'background-color': '#eaeaea', 'padding': '20px', 'text-align': 'center', 'font-family': 'Arial'
+        },
+        children=[
+            html.H1("SENTI - Sentiment Evaluation Tool for Insights", 
+                    style={'color': '#333', 'margin-bottom': '20px', 'text-shadow': '1px 1px 2px grey','text-decoration': 'underline'}),
+
+            html.H2("PIE CHART", style={'color': '#333', 'margin': '40px 0', 'text-decoration': 'underline'}),
+            html.Div(
+                html.Img(src=app.get_asset_url('sentiment.png'), style={'width': '700px', 'height': '400px'}),
+                style={'text-align': 'center'}
+            ),
+            html.Hr(style={'border': '0', 'border-top': '1px solid #ddd', 'margin': '40px 0'}),  # Faded Line
+
+            html.H2("WORD CLOUD", style={'color': '#333', 'margin': '40px 0', 'text-decoration': 'underline'}),
+            html.Div(
+                html.Img(src=app.get_asset_url('wordCloud.png'), style={'width': '700px', 'height': '400px'}),
+                style={'text-align': 'center'}
+            ),
+            html.Hr(style={'border': '0', 'border-top': '1px solid #ddd', 'margin': '40px 0'}),  # Faded Line
+
+            html.H2("SELECT A REVIEW", style={'color': '#333', 'margin': '40px 0', 'text-decoration': 'underline'}),
+            dcc.Dropdown(
+                id='Chart_Dropdown',
+                options=chart_dropdown_values,
+                placeholder='Select a Review',
+                style={'font-size': '20px', 'width': '80%', 'margin': '0 auto', 'text-align': 'center'}
+            ),
+            html.H3(id='sentiment1', children='Sentiment: Missing', style={'color': '#000', 'margin': '20px'}),
+            html.Hr(style={'border': '0', 'border-top': '1px solid #ddd', 'margin': '40px 0'}),  # Faded Line
+
+            html.H2("FIND SENTIMENT", 
+                    style={'color': '#333', 'margin': '40px 0', 'text-decoration': 'underline'}),
+
+            dcc.Textarea(
+                id='textarea_review',
+                placeholder='Enter the review here...',
+                style={'width': '66%', 'height': '150px', 'font-size': '20px', 'margin': '0 auto'}
+            ),
+            html.Div(
+                dbc.Button(
+                    'FIND',
+                    id='button_review',
+                    color='primary',
+                    style={'margin-top': '20px', 'width': '30%', 'font-size': '18px'}
+                ),
+                style={'display': 'flex', 'justify-content': 'center'}
+            ),
+            html.H3(id='result', children='Sentiment: Missing', style={'color': '#000', 'margin': '20px'})
+        ]
     )
-    
-    return main_layout
 
-
-
-'''
-Event Handling 
-When some clicks the button call my method update_app_ui
-
-Wiring 
-Object      Event    Function 
-Button      Click    update_app_ui
-
-Decorators and callbacks mechanism is a way to implment wiring in python
-Input  === Arguments to your callback
-Output === return of your callback 
-
-'''
-
-'''
+# Callbacks
 @app.callback(
-    Output( 'result'   , 'children'     ),
-    [
-    Input( 'textarea_review'    ,  'value'    )
-    ]
-    )
-def update_app_ui(textarea_value):
-    
-    print("Data Type = ", str(type(textarea_value)))
-    print("Value = ", str(textarea_value))
-
-    response = check_review(textarea_value)
-
-    if (response[0] == 0):
-        result = 'Negative'
-    elif (response[0] == 1 ):
-        result = 'Positive'
-    else:
-        result = 'Unknown'
-
-    return result
-'''
-
-
-@app.callback(
-    Output( 'result'   , 'children'     ),
-    [
-    Input( 'button_review'    ,  'n_clicks')
-    ],
-    [
-    State( 'textarea_review'  ,   'value'  )
-    ]
-    )
+    Output('result', 'children'),
+    [Input('button_review', 'n_clicks')],
+    [State('textarea_review', 'value')]
+)
 def update_app_ui_2(n_clicks, textarea_value):
-
-    print("Data Type = ", str(type(n_clicks)))
-    print("Value = ", str(n_clicks))
-
-
-    print("Data Type = ", str(type(textarea_value)))
-    print("Value = ", str(textarea_value))
-
-
-    if (n_clicks > 0):
-
-        response = check_review(textarea_value)
-        if (response[0] == 0):
-            result = 'Negative'
-        elif (response[0] == 1 ):
-            result = 'Positive'
-        else:
-            result = 'Unknown'
-        
-        return result
-        
-    else:
-        return ""
+    if n_clicks is not None and n_clicks > 0:
+        if textarea_value:
+            response = check_review(textarea_value)
+            result = 'Positive' if response[0] == 1 else 'Negative'
+            return f'Sentiment: {result}'
+    return 'Sentiment: Missing'
 
 @app.callback(
     Output("sentiment1", "children"),
-    [Input("Chart_Dropdown", "value")])
+    [Input("Chart_Dropdown", "value")]
+)
 def update_sentiment(review1):
-    sentiment = []
     if review1:
-        if check_review(review1)==0:
-            sentiment='Negative' 
-        if check_review(review1)==1:
-            sentiment='Positive'
-    else:
-        sentiment='Missing'
-    return sentiment
-# Main Function to control the Flow of your Project
+        sentiment = 'Positive' if check_review(review1) == 1 else 'Negative'
+        return f'Sentiment: {sentiment}'
+    return 'Sentiment: Missing'
+
+# Main function
 def main():
-    print("Start of your project")
     load_model()
     open_browser()
-    #update_app_ui()
-    
-    
-    global scrappedReviews
-    global project_name
-    global app
-    
-    project_name = "Sentiment Analysis with Insights"
-    #print("My project name = ", project_name)
-    #print('my scrapped data = ', scrappedReviews.sample(5) )
-    
-    # favicon  == 16x16 icon ----> favicon.ico  ----> assests
-    app.title = project_name
+    app.title = "SENTI"
     app.layout = create_app_ui()
     app.run_server()
-    
-    
-    
-    print("End of my project")
-    project_name = None
-    scrappedReviews = None
-    app = None
-    
-        
-# Calling the main function 
+
+# Start the app
 if __name__ == '__main__':
     main()
