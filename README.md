@@ -74,19 +74,20 @@ To set up this project on your local machine:
 
 ## Sample UI 
 
-![sentiment](https://github.com/user-attachments/assets/7747a8fa-2e71-47df-aee0-1aa13faaeadd)
-
-
-
-![wordCloud](https://github.com/user-attachments/assets/75fad7b3-51c8-42de-87ac-4e78d20ec327)
-
-
 
 ![Dropdown_ReviewSelection](https://github.com/user-attachments/assets/57008dd0-7f75-4a61-9ef8-52c7d70bdbab)
 
 
 
 ![FindSentiment](https://github.com/user-attachments/assets/1a2b2c92-0928-4354-b485-3e32a7b7f540)
+
+
+
+![sentiment](https://github.com/user-attachments/assets/7747a8fa-2e71-47df-aee0-1aa13faaeadd)
+
+
+
+![wordCloud](https://github.com/user-attachments/assets/75fad7b3-51c8-42de-87ac-4e78d20ec327)
 
 
 
