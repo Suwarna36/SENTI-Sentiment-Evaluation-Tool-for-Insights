@@ -21,10 +21,8 @@ This project leverages Python, Dash, and various NLP libraries to build a user-f
 ## Project Structure
 ```
 SENTI/
-├── assets/                 # Contains static assets like images for charts
 ├── main.py                 # Main application file for running the Dash app
 ├── requirements.txt        # Lists all dependencies for the project
-├── Procfile                # Heroku deployment configuration (if using Heroku)
 ├── README.md               # Project documentation (this file)
 └── static/                 # Folder for any additional static files
 ```
